@@ -1,0 +1,169 @@
+/* Deep Native Restyling - The World of Learning */
+
+QMainWindow {
+    background-color: #0e0e0e; 
+}
+
+QWidget {
+    font-family: "Segoe UI", Arial, sans-serif;
+    color: #e5e2e1;
+    font-size: 14px;
+}
+
+QLineEdit {
+
+}
+
+/* Background Image View (Used for Auth) */
+QWidget#authBackground {
+    background-color: #0e0e0e;
+}
+
+/* Container for Auth */
+QFrame#loginContainer {
+    background-color: transparent;
+}
+
+/* Main Panel for Auth */
+QFrame#authMainPanel {
+    background-color: #262626;
+}
+
+/* Brand Sidebar for Auth */
+QFrame#authBrandPanel {
+    background-color: #f26411; 
+}
+
+QLabel#authBrandText {
+    color: #4d1900;
+    font-weight: bold;
+    font-size: 16px;
+    letter-spacing: 5px;
+}
+
+/* Auth Titles */
+QLabel#authTitle {
+    font-size: 28px;
+    font-weight: 300;
+    color: #e5e2e1;
+}
+
+/* Auth Tabs */
+QPushButton#authTabActive {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid #f26411;
+    color: #e5e2e1;
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 11px;
+    padding-bottom: 8px;
+}
+QPushButton#authTabInactive {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: #737373;
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 11px;
+    padding-bottom: 8px;
+}
+
+/* Form Inputs */
+QLabel#inputLabel {
+    color: #a98a7e; 
+    font-size: 9px;
+    text-transform: uppercase;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+QLabel#inputLabelHint {
+    color: #737373;
+    font-size: 9px;
+    text-transform: uppercase;
+}
+
+QFrame#inputContainer {
+    background-color: transparent;
+    border: none;
+    border-bottom: 1px solid #404040; 
+}
+
+QFrame#inputContainer[focused="true"] {
+    border-bottom: 2px solid #f26411;
+}
+
+QLineEdit#webInput {
+    background-color: transparent;
+    border: none;
+    padding: 10px 0px;
+    font-size: 14px;
+    color: #e5e2e1;
+}
+
+QPushButton#primarySolidBtn {
+    background-color: #f26411;
+    color: #1a0800;
+    font-weight: bold;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    border: none;
+    border-radius: 4px;
+    padding: 14px;
+    text-align: left;
+    padding-left: 20px;
+}
+
+/* Generic Sidebar styling */
+QWidget#sidebar {
+    background-color: #131313; 
+    border-right: 1px solid #353534;
+}
+QPushButton#sidebarBtn {
+    background-color: transparent;
+    border: none;
+    text-align: left;
+    padding: 12px 20px;
+    font-size: 15px;
+    border-radius: 6px;
+}
+QPushButton#sidebarBtn:hover {
+    background-color: #2a2a2a;
+}
+QPushButton#sidebarBtn:checked {
+    background-color: rgba(242, 100, 17, 30);
+    color: #ffb596;
+    font-weight: bold;
+}
+
+/* Video Cards */
+QFrame#videoCard {
+    background-color: #201f1f;
+    border-radius: 8px;
+    border: 1px solid transparent;
+}
+QFrame#videoCard:hover {
+    border: 1px solid #594137;
+    background-color: #2a2a2a;
+}
+
+/* Scrollbars */
+QScrollBar:vertical {
+    border: none;
+    background: transparent;
+    width: 6px;
+    margin: 0px;
+}
+QScrollBar::handle:vertical {
+    background: #e5e2e1;
+    border-radius: 3px;
+    min-height: 30px;
+}
+QScrollBar::handle:vertical:hover {
+    background: #d1d5db;
+}
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+    height: 0px;
+}
