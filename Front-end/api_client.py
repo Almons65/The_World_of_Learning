@@ -77,8 +77,15 @@ class ApiClient:
         worker = ApiWorker('GET', f"/user/{self.current_username}/profile")
         self._start(worker, callback, error_callback)
 
-    def chat_ai(self, message, callback, error_callback):
-        worker = ApiWorker('POST', '/ai/chat', {'message': message})
+    def video_chat(self, video_id, title, desc, duration, question, callback, error_callback):
+        data = {
+            'video_id': video_id,
+            'video_title': title,
+            'video_desc': desc,
+            'duration': duration,
+            'question': question
+        }
+        worker = ApiWorker('POST', '/ai/video_chat', data)
         self._start(worker, callback, error_callback)
 
     def video_suggest(self, title, description, callback, error_callback):
@@ -139,6 +146,10 @@ class ApiClient:
 
     def get_related_videos(self, title, video_id, callback, error_callback):
         worker = ApiWorker('GET', '/youtube/related', {"video_title": title, "video_id": video_id})
+        self._start(worker, callback, error_callback)
+
+    def download_video(self, video_id, callback, error_callback, save_path=None):
+        worker = ApiWorker('POST', '/youtube/download', {"video_id": video_id, "username": self.current_username, "save_path": save_path})
         self._start(worker, callback, error_callback)
 
 client = ApiClient()

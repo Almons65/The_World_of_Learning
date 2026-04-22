@@ -116,64 +116,78 @@ class PremiumProgressDialog(QDialog):
 class ToastNotification(QFrame):
     def __init__(self, text, is_error=False, parent=None):
         super().__init__(parent)
-        self.setFixedWidth(320)
-        self.setFixedHeight(50)
-        self.setAttribute(Qt.WA_TransparentForMouseEvents)
+        self.setAttribute(Qt.WA_TranslucentBackground)
         
-        bg_col = "#1c1b1b"
+        bg_col = "rgba(28, 27, 27, 0.95)"
         accent = "#f26411" if not is_error else "#ff4444"
         
         self.setStyleSheet(f"""
             QFrame {{
                 background: {bg_col};
                 border: 1px solid {accent};
-                border-radius: 8px;
+                border-radius: 25px;
             }}
         """)
         
         shadow = QGraphicsDropShadowEffect(self)
-        shadow.setBlurRadius(15)
-        shadow.setYOffset(4)
-        shadow.setColor(QColor(0, 0, 0, 150))
+        shadow.setBlurRadius(25)
+        shadow.setYOffset(8)
+        shadow.setColor(QColor(0, 0, 0, 200))
         self.setGraphicsEffect(shadow)
         
         lay = QHBoxLayout(self)
-        lay.setContentsMargins(16, 0, 16, 0)
+        lay.setContentsMargins(20, 0, 25, 0)
+        lay.setSpacing(12)
         
-        icon = QLabel("✓" if not is_error else "✕")
-        icon.setStyleSheet(f"color: {accent}; font-size: 18px; font-weight: bold;")
-        lay.addWidget(icon)
+        icon_lbl = QLabel("✓" if not is_error else "✕")
+        icon_lbl.setStyleSheet(f"color: {accent}; font-size: 18px; font-weight: 900; background: transparent;")
+        lay.addWidget(icon_lbl)
         
         self.lbl = QLabel(text)
-        self.lbl.setStyleSheet("color: #ffffff; font-size: 13px; font-weight: bold;")
-        lay.addWidget(self.lbl, 1)
+        self.lbl.setStyleSheet("color: #ffffff; font-size: 13px; font-weight: 600; background: transparent;")
+        lay.addWidget(self.lbl)
         
-        self._opacity = QPropertyAnimation(self, b"windowOpacity")
-        self._opacity.setDuration(400)
+        # Adjust size to text
+        self.lbl.adjustSize()
+        width = self.lbl.sizeHint().width() + 80
+        self.setFixedSize(max(240, min(width, 600)), 50)
         
     @staticmethod
     def show_toast(text, is_error=False, parent=None):
         toast = ToastNotification(text, is_error, parent)
         if parent:
-            # Position at top center of parent
+            # Position at top center
             px = (parent.width() - toast.width()) // 2
-            py = 40
-            toast.move(px, py)
-        toast.show()
+            py = 30
+            toast.move(px, -60) # Start above
+            
+            # Slide down animation
+            toast._anim = QPropertyAnimation(toast, b"pos")
+            toast._anim.setDuration(600)
+            toast._anim.setStartValue(QPoint(px, -60))
+            toast._anim.setEndValue(QPoint(px, py))
+            toast._anim.setEasingCurve(QEasingCurve.OutBack)
+            toast._anim.start()
         
-        # Fade out and close after 3 seconds
-        QTimer.singleShot(3000, lambda: toast._fade_out())
+        toast.show()
+        QTimer.singleShot(4000, lambda: toast._fade_out())
         return toast
 
     def _fade_out(self):
-        self._anim = QPropertyAnimation(self, b"pos")
-        self._anim.setDuration(500)
-        self._anim.setStartValue(self.pos())
-        self._anim.setEndValue(QPoint(self.x(), self.y() - 20))
-        self._anim.setEasingCurve(QEasingCurve.InBack)
-        self._anim.finished.connect(self.close)
+        self._fader = QPropertyAnimation(self, b"windowOpacity")
+        self._fader.setDuration(500)
+        self._fader.setStartValue(1.0)
+        self._fader.setEndValue(0.0)
         
-        self._anim.start()
+        self._mover = QPropertyAnimation(self, b"pos")
+        self._mover.setDuration(500)
+        self._mover.setStartValue(self.pos())
+        self._mover.setEndValue(QPoint(self.x(), self.y() - 20))
+        self._mover.setEasingCurve(QEasingCurve.InBack)
+        
+        self._mover.finished.connect(self.close)
+        self._fader.start()
+        self._mover.start()
 
 from ui.folder_store import get_user_folders, save_user_folders
 from ui.views.personal_hub_view import HubVideoCard
@@ -523,68 +537,23 @@ class PersonalFolderView(QWidget):
         slug = video_data.get("slug", "")
         if not slug: return
 
-        import re as _re
-        raw_title = video_data.get("title", "video")
-        # Strip all characters illegal in Windows filenames: \ / : * ? " < > |
-        safe_title = _re.sub(r'[\\/:*?"<>|]', '', raw_title).strip()[:80] or "video"
-
-        # Default to user Downloads folder
-        import os
-        default_dir = os.path.join(os.path.expanduser("~"), "Downloads")
-        default_path = os.path.join(default_dir, f"{safe_title}.mp4")
-
-        save_path, _ = QFileDialog.getSaveFileName(
-            self, "Save Video", default_path, "MP4 Video (*.mp4);;All Files (*)"
-        )
+        import re
+        title = video_data.get("title", "video")
+        safe_title = re.sub(r'[\\/*?:"<>|]', "", title)
+        
+        save_path, _ = QFileDialog.getSaveFileName(self, "Save Video", f"{safe_title}.mp4", "Video Files (*.mp4)")
         if not save_path: return
 
+        # Show toast that download has started
+        ToastNotification.show_toast(f"Starting download for {video_data.get('title', 'video')}...", parent=self)
 
-        # Use premium progress dialog
-        self._dl_prog = PremiumProgressDialog("Preparing Download", self)
-        self._dl_prog.show()
-        self._dl_save_path = save_path
-
-        def on_stream(data):
-            if not self._dl_prog or self._dl_prog.wasCanceled():
-                return
-            url = data.get("stream_url", "")
-            if not url:
-                self._dl_prog.close()
-                ToastNotification.show_toast("Could not get stream URL", is_error=True, parent=self)
-                return
-            self._dl_prog.setLabelText("Downloading video...")
-            # Keep worker alive as instance attribute
-            self._dl_worker = _DownloadWorker(url, self._dl_save_path)
-            self._dl_worker.signals.progress.connect(self._on_dl_progress)
-            self._dl_worker.signals.done.connect(self._on_dl_done)
-            self._dl_worker.signals.error.connect(self._on_dl_error)
-            QThreadPool.globalInstance().start(self._dl_worker)
+        def on_done(data):
+            ToastNotification.show_toast("Download Complete! Saved to your machine.", is_error=False, parent=self)
 
         def on_err(e):
-            if self._dl_prog:
-                self._dl_prog.close()
-            ToastNotification.show_toast(f"Stream error: {e}", is_error=True, parent=self)
+            ToastNotification.show_toast(f"Download failed: {e}", is_error=True, parent=self)
 
-        client.get_stream_url(slug, "720p", on_stream, on_err)
-
-    def _on_dl_progress(self, downloaded: int, total: int):
-        if self._dl_prog and not self._dl_prog.wasCanceled():
-            pct = int(downloaded / total * 100) if total else 0
-            self._dl_prog.setValue(pct)
-
-    def _on_dl_done(self, path: str):
-        if self._dl_prog:
-            self._dl_prog.close()
-            self._dl_prog = None
-        ToastNotification.show_toast("Download Complete!", is_error=False, parent=self)
-        self._dl_worker = None
-
-    def _on_dl_error(self, err: str):
-        if self._dl_prog:
-            self._dl_prog.close()
-            self._dl_prog = None
-        ToastNotification.show_toast(err, is_error=True, parent=self)
-        self._dl_worker = None
+        client.download_video(slug, on_done, on_err, save_path=save_path)
 
     def _on_remove_video(self, video_data: dict):
         if self._folder_data:

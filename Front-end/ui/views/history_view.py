@@ -31,21 +31,21 @@ class LargeHistoryCard(QWidget):
 
         # Thumbnail
         self._thumb_frame = QFrame()
-        self._thumb_frame.setFixedHeight(420)
+        self._thumb_frame.setFixedHeight(480)
         self._thumb_frame.setStyleSheet(
             "QFrame{background:#131313;border-radius:6px;border:1px solid #232323;}")
         self._thumb_frame.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
         self._thumb = QLabel(self._thumb_frame)
         self._thumb.setScaledContents(True)
-        self._thumb.setGeometry(0, 0, 500, 420)
+        self._thumb.setGeometry(0, 0, 500, 480)
 
         # TEMPORAL LOG badge
         badge = QLabel("TEMPORAL LOG", self._thumb_frame)
         badge.setStyleSheet(
             "QLabel{background:#f26411;color:#1a0800;font-size:8px;font-weight:bold;"
             "letter-spacing:2px;padding:3px 8px;border:none;}")
-        badge.move(12, 385)
+        badge.move(12, 445)
         badge.adjustSize()
 
         lay.addWidget(self._thumb_frame)
@@ -140,14 +140,14 @@ class SmallHistoryCard(QWidget):
         lay.setSpacing(8)
 
         self._thumb_frame = QFrame()
-        self._thumb_frame.setFixedHeight(300)
+        self._thumb_frame.setFixedHeight(340)
         self._thumb_frame.setStyleSheet(
             "QFrame{background:#131313;border-radius:6px;border:1px solid #232323;}")
         self._thumb_frame.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
         self._thumb = QLabel(self._thumb_frame)
         self._thumb.setScaledContents(True)
-        self._thumb.setGeometry(0, 0, 300, 300)
+        self._thumb.setGeometry(0, 0, 300, 340)
 
         lay.addWidget(self._thumb_frame)
 

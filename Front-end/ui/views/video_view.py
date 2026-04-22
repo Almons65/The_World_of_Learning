@@ -686,35 +686,28 @@ class VideoView(QWidget):
     def _on_download(self):
         slug = self.video_data.get("slug")
         if not slug: return
-        from PySide6.QtWidgets import QFileDialog
         
-        # Clean title for filename
+        from PySide6.QtWidgets import QFileDialog
         import re
         title = self.video_data.get("title", "video")
         safe_title = re.sub(r'[\\/*?:"<>|]', "", title)
         
-        path, _ = QFileDialog.getSaveFileName(self, "Save Video", f"{safe_title}.mp4", "Video Files (*.mp4)")
-        if path:
-            from PySide6.QtCore import QThread
-            class Downloader(QThread):
-                def run(self):
-                    try:
-                        import yt_dlp
-                        ydl_opts = {
-                            'format': 'best[ext=mp4]/best',
-                            'outtmpl': path,
-                            'quiet': True,
-                            'no_warnings': True,
-                        }
-                        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                            ydl.download([f"https://www.youtube.com/watch?v={slug}"])
-                    except Exception as e:
-                        print(f"Download error: {e}")
-                        
-            self._dl_thread = Downloader()
-            self._dl_thread.finished.connect(lambda: self._download_btn.set_label("DOWNLOADED"))
-            self._download_btn.set_label("DOWNLOADING...")
-            self._dl_thread.start()
+        save_path, _ = QFileDialog.getSaveFileName(self, "Save Video", f"{safe_title}.mp4", "Video Files (*.mp4)")
+        if not save_path: return
+
+        self._download_btn.set_label("DOWNLOADING...")
+        self._download_btn.setEnabled(False)
+        
+        def on_done(data):
+            self._download_btn.set_label("DOWNLOADED")
+            self._download_btn.set_accent(True)
+            
+        def on_err(err):
+            self._download_btn.set_label("DOWNLOAD")
+            self._download_btn.setEnabled(True)
+            print(f"Download error: {err}")
+
+        client.download_video(slug, on_done, on_err, save_path=save_path)
 
     def add_related(self, videos: list):
         self._clear_related()
@@ -791,9 +784,12 @@ class VideoView(QWidget):
         self._loading_bubble = ChatBubble("Analyzing...", True)
         self._chat_layout.insertWidget(self._chat_layout.count() - 1, self._loading_bubble)
         
-        dur_str = self._player._dur_lbl.text() if hasattr(self._player, "_dur_lbl") else "unknown"
-        prompt = msg + f" (Please provide a compact, clear response. ALWAYS include exact timestamps in MM:SS format referencing the video. CRITICAL: The total video duration is {dur_str}. Ensure all timestamps you provide strictly fall within the 0:00 to {dur_str} range.)"
-        client.chat_ai(prompt, self._on_reply, self._on_reply_err)
+        dur_str = self._player._dur_lbl.text() if hasattr(self._player, "_dur_lbl") else "14:00"
+        video_id = self.video_data.get("slug", "unknown")
+        title = self.video_data.get("title", "Unknown Video")
+        desc = self.video_data.get("desc", "")
+        
+        client.video_chat(video_id, title, desc, dur_str, msg, self._on_reply, self._on_reply_err)
 
     def _send_chat(self):
         msg = self._chat_input.text().strip()

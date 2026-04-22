@@ -2,19 +2,21 @@ import persistent
 import re
 from abc import ABC, abstractmethod
 from datetime import datetime
-class AbstractFolderItem(persistent.Persistent, ABC):
+
+class MediaItem(persistent.Persistent, ABC):
     @abstractmethod
     def to_dict(self):
         pass
-class Folder(AbstractFolderItem):
+
+class UserFolders(MediaItem):
     def __init__(self, name: str, is_public: bool = False, img: str = ""):
         self.name = name
         self.isPublic = is_public
         self.img = img
         self.items = [] 
-    def add_item(self, item):
+    def add_item(self, item: MediaItem):
         self.items.append(item)
-    def remove_item(self, item):
+    def remove_item(self, item: MediaItem):
         if item in self.items:
             self.items.remove(item)
     def to_dict(self):
@@ -41,7 +43,7 @@ class Folder(AbstractFolderItem):
             "is_public": self.isPublic,
             "items": serialized_items
         }
-class VideoClip(AbstractFolderItem):
+class VideoClip(MediaItem):
     def __init__(self, slug: str, title: str, desc: str, tag: str, img: str, parent_slug: str, views: str = "0 views", date: str = "Unknown", creator: str = "Creator"):
         self.slug = slug
         self.title = title
@@ -56,7 +58,12 @@ class VideoClip(AbstractFolderItem):
     @abstractmethod
     def to_dict(self):
         pass
-class LearningVideo(VideoClip):
+class Video(VideoClip):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.local_path = None
+        self.is_downloaded = False
+
     def to_dict(self):
         return {
             "type": "file",
@@ -68,18 +75,10 @@ class LearningVideo(VideoClip):
             "parent_slug": getattr(self, 'parent_slug', '/home'),
             "views": getattr(self, 'views', '0 views'),
             "date": getattr(self, 'date', 'Unknown'),
-            "creator": getattr(self, 'creator', 'Creator')
+            "creator": getattr(self, 'creator', 'Creator'),
+            "local_path": getattr(self, 'local_path', None),
+            "is_downloaded": getattr(self, 'is_downloaded', False)
         }
-class Playlist(persistent.Persistent):
-    def __init__(self, name: str, is_public: bool = False):
-        self.playlistName = name
-        self.isPublic = is_public
-        self.videos = [] 
-    def addVideo(self, video_data: dict):
-        if not any(v.get('slug') == video_data.get('slug') for v in self.videos):
-            self.videos.append(video_data)
-    def removeVideo(self, slug: str):
-        self.videos = [v for v in self.videos if v.get('slug') != slug]
 class User(persistent.Persistent):
     def __init__(self, username, email, password):
         self.username = username
@@ -89,18 +88,19 @@ class User(persistent.Persistent):
         self.interests = [] 
         self.favorites = [] 
         self.history = []   
-        self.playlists = {} 
-        self.folders = {}   
+        self.discovery_feed = [] # Persistent storage for the initial AI Discovery results
+        self.expanded_feed = [] # Persistent storage for "Explore Deeper" results
+        self.folders = {}   # Consolidating all collections (Folders/Playlists) here
+        
     def createFolder(self, name: str, is_public: bool = False):
         if name not in self.folders:
-            self.folders[name] = Folder(name, is_public)
+            self.folders[name] = UserFolders(name, is_public)
             return True
         return False
+    
     def createPlaylist(self, name: str, is_public: bool = False):
-        if name not in self.playlists:
-            self.playlists[name] = Playlist(name, is_public)
-            return True
-        return False
+        # Map Playlist creation to UserFolders for a unified experience
+        return self.createFolder(name, is_public)
     @staticmethod
     def validate_password(password: str) -> bool:
         has_upper = any(c.isupper() for c in password)

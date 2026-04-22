@@ -1,7 +1,7 @@
 import json
 import re
 from database import db
-from models import Folder, LearningVideo
+from models import UserFolders, Video
 import transaction
 def parse_yt_duration(pt_str):
     match = re.search(r'PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?', pt_str)
@@ -24,7 +24,7 @@ def seed_database():
     topic_names = ["Science", "History", "Technology", "Art", "Music", "Literature", "Mathematics", "Geography"]
     categories = []
     for tn in topic_names:
-        fallback_root = Folder(f"{tn} Discovery")
+        fallback_root = UserFolders(f"{tn} Discovery")
         subfolders_data = yt_expanded_ids.get(tn, {})
         assigned_topic_ids = set()
         count = 0 
@@ -33,7 +33,7 @@ def seed_database():
             folder_index = count % len(vid_list) 
             folder_img = f"https://img.youtube.com/vi/{vid_list[folder_index]}/hqdefault.jpg"
             count += 1
-            sub_folder = Folder(f"{tn} {sub_name}", is_public=True, img=folder_img)
+            sub_folder = UserFolders(f"{tn} {sub_name}", is_public=True, img=folder_img)
             added_this_folder = 0
             for specific_slug in vid_list:
                 if added_this_folder >= 10: break
@@ -47,7 +47,7 @@ def seed_database():
                 clean_title = re.sub(r'\s{2,}', ' ', clean_title)
                 if len(clean_title) < 3:
                     clean_title = f"{tn} {sub_name} Content"
-                lv = LearningVideo(specific_slug, clean_title, dur_str, f"{tn} {sub_name}", thumb, f"{tn.lower()}_{sub_name.lower().replace(' ', '_')}", views=meta["views"], date=meta["date"], creator=meta["creator"])
+                lv = Video(specific_slug, clean_title, dur_str, f"{tn} {sub_name}", thumb, f"{tn.lower()}_{sub_name.lower().replace(' ', '_')}", views=meta["views"], date=meta["date"], creator=meta["creator"])
                 sub_folder.add_item(lv)
                 db.root['videos'][specific_slug] = lv
                 added_this_folder += 1
